@@ -15,5 +15,18 @@
   "bugs": {
     "url": "https://github.com/Serehactka/SlotGame/issues"
   },
-  "homepage": "https://github.com/Serehactka/SlotGame#readme"
+  "homepage": "https://github.com/Serehactka/SlotGame#readme",
+  "dependencies": {
+    "@types/pixi.js": "^4.8.4",
+    "file-loader": "^2.0.0",
+    "pixi.js": "^4.8.3"
+  },
+  "devDependencies": {
+    "@types/node": "^10.12.15",
+    "css-loader": "^2.0.1",
+    "html-loader": "^0.5.5",
+    "style-loader": "^0.23.1",
+    "ts-loader": "^5.3.1",
+    "typescript": "^3.2.2"
+  }
 }
