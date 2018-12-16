@@ -1,0 +1,19 @@
+{
+  "name": "slotgame",
+  "version": "1.0.0",
+  "description": "dev task",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Serehactka/SlotGame.git"
+  },
+  "author": "serehactka",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Serehactka/SlotGame/issues"
+  },
+  "homepage": "https://github.com/Serehactka/SlotGame#readme"
+}
