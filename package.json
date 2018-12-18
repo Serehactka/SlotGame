@@ -4,7 +4,8 @@
   "description": "dev task",
   "main": "main.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "webpack-dev-server && webpack -w"
   },
   "repository": {
     "type": "git",
@@ -18,11 +19,14 @@
   "homepage": "https://github.com/Serehactka/SlotGame#readme",
   "dependencies": {
     "@types/pixi.js": "^4.8.4",
+    "bezier-easing": "^2.1.0",
     "file-loader": "^2.0.0",
     "pixi.js": "^4.8.3"
   },
   "devDependencies": {
     "@types/node": "^10.12.15",
+    "browser-sync": "^2.26.3",
+    "browser-sync-webpack-plugin": "^2.2.2",
     "css-loader": "^2.0.1",
     "html-loader": "^0.5.5",
     "style-loader": "^0.23.1",
