@@ -1,4 +1,4 @@
-import { Sprite, Texture } from 'pixi.js';
+import { Sprite, Texture,  loaders } from 'pixi.js';
 
 const symbolsMap = require('../data/symbols.json');
 const symbolsArray: Array<string> = symbolsMap.data;

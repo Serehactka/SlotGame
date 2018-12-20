@@ -1,4 +1,4 @@
-import { Sprite, Texture, Rectangle, Graphics, extras } from 'pixi.js';
+import { Sprite, Texture, Graphics, extras } from 'pixi.js';
 import { Reel } from './Reel';
 
 const SLOT_DEFAULT_WIDTH = 1368,
@@ -15,6 +15,7 @@ export class SlotWindow extends Sprite {
     protected frameSprite: Sprite = new Sprite(Texture.fromImage('../img/slotOverlay.png'));
     protected backgroundSprite: extras.TilingSprite = new extras.TilingSprite(Texture.fromImage('../img/winningFrameBackground.jpg'));
     protected areaMask: Graphics = new Graphics();
+    protected Reels: Array<Reel> = [];
 
     constructor(width: number = SLOT_DEFAULT_WIDTH, 
                 height: number = SLOT_DEFAULT_HEIGHT, 
@@ -22,7 +23,7 @@ export class SlotWindow extends Sprite {
         
         super();
 
-        window['mask'] = this.areaMask;
+        window['Slot'] = this;
 
         this.setupSprites(width - buttonIndent, height);
         this.setupReels();
@@ -65,6 +66,7 @@ export class SlotWindow extends Sprite {
                 x: index * reelStep
             });
 
+            this.Reels.push(reel);
             this.addChild(reel);
             reel.mask = this.areaMask;
         }

@@ -2,12 +2,14 @@ import { Sprite } from 'pixi.js';
 import { ReelCell } from './ReelCell';
 
 const BezierEasing = require('bezier-easing');
+const animate = require('../vendor/animate');
 
 const REELCELLS_COUNT = 4;
 const REEL_TOP_OFFSET = 30;
 const REEL_LEFT_OFFSET = 20;
-const REELCELL_SPIN_SPEED = 20;
+const REELCELL_SPIN_SPEED = 10;
 const REELCELL_SPIN_ACCEL = 1;
+const FINISH_FRAMES_COUNT = 30;
 
 interface IPosition {
     x: number,
@@ -39,7 +41,8 @@ export class Reel extends Sprite {
     protected reelCellWidth: number = 0;
     protected spinnedValue: number = 0;
     protected isSpinning: boolean = false;
-    protected finishSpinBezier: Function = BezierEasing(0,0.94,0.59,1.26);
+    protected finishSpinBezier: Function = BezierEasing(0,0.94,0.59,2);
+    protected spinBezier: Function = BezierEasing(0,0,1,1);
 
     constructor(options: IReelProperties) {
         super();
@@ -114,7 +117,7 @@ export class Reel extends Sprite {
     }
 
     startSpin(spinTime?: number): void {
-        spinTime = spinTime || 10000;
+        spinTime = spinTime || 5000;
         this.isSpinning = true;
 
         this.spin();
@@ -122,40 +125,67 @@ export class Reel extends Sprite {
     }
 
     spin(spinSpeed?: number): void {
-        if (!this.isSpinning) {
-            this.finishSpin();
-            return null;
-        }
+        animate({
+            tickStep: 1,
+            delay: 5000,
+            step: (step, val) => {
+                // console.log(step, val);
+                this.spinTick(step);
+            },
+            complete: () => {
+                // this.refreshCell();
+                this.finishSpin();
+            },
+            bezier: this.spinBezier
+        });
 
-        spinSpeed = spinSpeed || 0;
-        spinSpeed += REELCELL_SPIN_ACCEL;
-        spinSpeed > REELCELL_SPIN_SPEED && (spinSpeed = REELCELL_SPIN_SPEED);
+        // if (!this.isSpinning && this.spinnedValue == 0) {
+        //     this.finishSpin();
+        //     return null;
+        // }
 
-        this.spinTick(spinSpeed);
-        requestAnimationFrame(this.spin.bind(this, spinSpeed));
+        // spinSpeed = REELCELL_SPIN_SPEED;
+
+        // spinSpeed = spinSpeed || 0;
+        // spinSpeed += REELCELL_SPIN_ACCEL;
+        // spinSpeed > REELCELL_SPIN_SPEED && (spinSpeed = REELCELL_SPIN_SPEED);
+
+        // this.spinTick(spinSpeed);
+        // requestAnimationFrame(this.spin.bind(this, spinSpeed));
     }
 
     finishSpin(): void {
-        
-        const spinSpeed = REELCELL_SPIN_SPEED * this.finishSpinBezier(1);
+        animate({
+            from: this.spinnedValue - 10,
+            to: this.reelCellStep,
+            delay: 600,
+            step: (step, val) => {
+                this.spinTick(step);
+            },
+            complete: () => {
+                this.spinnedValue = 0;
+                // this.refreshCell();
+            },
+            bezier: this.finishSpinBezier
+        })
     }
 
     stopSpin(): void {
         this.isSpinning = false;
     }
 
-    spinTick(speenSpeed?: number): void {
+    spinTick(spinSpeed?: number): void {
         /*
          * Simpliest algorithm - just search for cell step spin and then do cell refresh
         */
 
-        speenSpeed = speenSpeed || 0;
+        spinSpeed = spinSpeed || 0;
 
         this.ReelCells.forEach( cell => {
-            cell.y += speenSpeed;
+            cell.y += spinSpeed;
         });
 
-        this.spinnedValue += speenSpeed;
+        this.spinnedValue += spinSpeed;
 
         if (this.spinnedValue >= this.reelCellStep) {
             console.log('spinned');

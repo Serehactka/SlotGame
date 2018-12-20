@@ -1,17 +1,16 @@
 // import * as PIXI from 'pixi.js';
 
-import { Application, Point, Sprite, Texture, Graphics } from 'pixi.js';
-import { ReelButton } from './ReelButton';
+import { Application } from 'pixi.js';
 import { SlotWindow } from './SlotWindow';
-import { ReelCell } from './ReelCell';
-import { Reel } from './Reel';
+
+const symbolsMap = require('../data/symbols.json');
+const symbolsArray: Array<string> = symbolsMap.data;
+const symbolsCount: number =  symbolsArray.length;
 
 const BODY = document.body;
-
 const App = new Application();
 const Renderer = App.renderer;
 const View = App.view;
-
 const viewport = {
     width: BODY.offsetWidth,
     height: BODY.offsetHeight
@@ -24,43 +23,20 @@ Renderer.resize(1368, 630);
 
 document.body.appendChild(App.view);
 
-const example: ReelButton = new ReelButton(Texture.fromImage('../img/btn_spin_disable.png'));
-const testBack: Sprite = new Sprite(Texture.fromImage('../img/test_back.jpg'));
-const slotWindow: SlotWindow = new SlotWindow();
-// const symbol: ReelCell = new ReelCell();
+function loadResources(): void {
+    symbolsArray.forEach( symbol => {
+        App.loader.add(symbolsMap.path + symbol);
+    });
+    
+    App.loader.load(startGame);
+}
 
-testBack.width = 800;
-testBack.height = 600;
+function startGame(): void {
+    const slotWindow: SlotWindow = new SlotWindow();
+    App.stage.addChild(slotWindow);
+}
 
-const rect: Graphics = new Graphics();
-rect.beginFill(0x0000FF, 255);
-rect.drawRoundedRect (100,100,200,200, 10);
-rect.endFill();
-
-testBack.mask = rect;
-
-example.addRenderSpriteStage('down', Texture.fromImage('../img/btn_spin_pressed.png'));
-example.addRenderSpriteStage('up', Texture.fromImage('../img/btn_spin_normal.png'));
-example.addRenderSpriteStage('click', Texture.fromImage('../img/btn_spin_hover.png'));
-
-
-
-App.stage.addChild(example);
-// App.stage.addChild(rect);
-// App.stage.addChild(testBack);
-App.stage.addChild(slotWindow);
-// App.stage.addChild(symbol);
-// App.stage.addChild(reel);
-
-example.interactive = true;
-example.cursor = 'pointer';
-
-example.on('mousedown', () => example.setSpriteStage('down'));
-example.on('mouseup', () => example.setSpriteStage('up'));
-example.on('click', () => example.setSpriteStage('click'));
-
-example.width = 60;
-example.height = 60;
+loadResources();
 
 // PIXI.loader.add('example', '../img/btn_spin_pressed.png').load( (loader: any, resources: any) => {
 //     example.texture = resources.example.texture;
