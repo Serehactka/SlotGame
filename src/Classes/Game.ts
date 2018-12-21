@@ -1,53 +1,112 @@
-// import * as PIXI from 'pixi.js';
-
-import { Application } from 'pixi.js';
+import { Application, Texture } from 'pixi.js';
 import { SlotWindow } from './SlotWindow';
+import { ReelButton } from './ReelButton';
+import { IEvent } from '../Interfaces/main.interface';
 
-const symbolsMap = require('../data/symbols.json');
-const symbolsArray: Array<string> = symbolsMap.data;
-const symbolsCount: number =  symbolsArray.length;
+const textures = require('../data/textures.json');
 
-const BODY = document.body;
-const App = new Application();
-const Renderer = App.renderer;
-const View = App.view;
-const viewport = {
-    width: BODY.offsetWidth,
-    height: BODY.offsetHeight
-};
+const DEFAULT_GAME_HEIGHT = 600;
+const DEFAULT_GAME_WIDTH = 1300
 
-View.width = viewport.width;
-View.height = viewport.height;
-
-Renderer.resize(1368, 630);
-
-document.body.appendChild(App.view);
-
-function loadResources(): void {
-    symbolsArray.forEach( symbol => {
-        App.loader.add(symbolsMap.path + symbol);
+class Game {
+    private App = new Application({
+        width: DEFAULT_GAME_WIDTH,
+        height: DEFAULT_GAME_HEIGHT,
+        backgroundColor: 0xffffff
     });
-    
-    App.loader.load(startGame);
+
+    private slotWindow: SlotWindow;
+    private body: any = document.body;
+    private spinButton: ReelButton;
+
+    constructor() { 
+        this.initApp();
+    }
+
+    handleNotification(e: IEvent) {
+        e.type == 'end-spin' && this.refreshGame();
+    }
+
+    initApp(): void {
+        this.loadResources((args: Array<any>) => {
+            this.createInstances();
+            this.setListeners();
+            this.startGame();
+        });
+    }
+
+    loadResources(cb: Function): void {
+        textures.forEach( tx => {
+            this.App.loader.add(tx);
+        });
+
+        this.App.loader.load((...args) => cb && cb(args));
+    }
+
+    createInstances(): void {
+        this.slotWindow = new SlotWindow();
+        this.App.stage.addChild(this.slotWindow);
+
+        this.spinButton = new ReelButton(Texture.fromImage('../img/btn_spin_normal.png'));
+        this.spinButton.addRenderSpriteStage('normal', Texture.fromImage('../img/btn_spin_normal.png'));
+        this.spinButton.addRenderSpriteStage('hover', Texture.fromImage('../img/btn_spin_hover.png'));
+        this.spinButton.addRenderSpriteStage('disable', Texture.fromImage('../img/btn_spin_disable.png'));
+        this.spinButton.addRenderSpriteStage('pressed', Texture.fromImage('../img/btn_spin_pressed.png'));
+        this.spinButton.x = 900, this.spinButton.y = 500;
+        this.App.stage.addChild(this.spinButton);
+    }
+
+    setListeners(): void {
+        this.spinButton.on('mouseover', this.checkEvent.bind(this));
+        this.spinButton.on('mouseout', this.checkEvent.bind(this));
+        this.spinButton.on('mousedown', this.checkEvent.bind(this));
+        this.spinButton.on('click', this.checkEvent.bind(this));
+    }
+
+    checkEvent(e) {
+        const currentTarget = e.currentTarget;
+        var target = e.target,
+            type = e.type;
+
+        switch (type) {
+            case 'mousedown':
+                if (currentTarget === this.spinButton && !this.spinButton.disable) {
+                    this.spinButton.setSpriteStage('pressed');
+                }
+                break;
+            case 'mouseover':
+                if (currentTarget === this.spinButton && !this.spinButton.disable) {
+                    this.spinButton.setSpriteStage('hover');
+                }
+                break;
+            case 'mouseout':
+                if (currentTarget === this.spinButton && !this.spinButton.disable) {
+                    this.spinButton.setSpriteStage('normal');
+                }
+                break;
+            case 'click':
+                if (currentTarget === this.spinButton && !this.spinButton.disable) {
+                    this.spinButton.setSpriteStage('disable');
+                    this.startSlotWindowSpinning();
+                    this.spinButton.disable = true;
+                }
+                break;
+        }
+    }
+
+    startSlotWindowSpinning(): void {
+        this.slotWindow.spinReels();
+        this.slotWindow.subscribe('end-spin', this.handleNotification.bind(this));
+    }
+
+    startGame(): void {
+        this.body.append(this.App.view);
+    }
+
+    refreshGame(): void {
+        this.spinButton.disable = false;
+        this.spinButton.setSpriteStage('normal');
+    }
 }
 
-function startGame(): void {
-    const slotWindow: SlotWindow = new SlotWindow();
-    App.stage.addChild(slotWindow);
-}
-
-loadResources();
-
-// PIXI.loader.add('example', '../img/btn_spin_pressed.png').load( (loader: any, resources: any) => {
-//     example.texture = resources.example.texture;
-
-//     example.width = 60;
-//     example.height = 60;
-
-//     example.x = Renderer.width/2 - example.width/2;
-//     example.y = Renderer.height/2 - example.height/2;
-
-//     App.stage.addChild(example);
-
-//     // console.log(example);
-// });
+new Game();

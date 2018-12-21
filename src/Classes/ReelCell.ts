@@ -1,26 +1,17 @@
 import { Sprite, Texture,  loaders } from 'pixi.js';
+import { IDimensionProperties } from '../Interfaces/main.interface';
 
 const symbolsMap = require('../data/symbols.json');
 const symbolsArray: Array<string> = symbolsMap.data;
 const symbolsCount: number =  symbolsArray.length;
 
 const CELL_WIDTH = 160;
-const CELL_HEIGHT_FIX = 10;
+const CELL_HEIGHT_FIX = 20;
 
-interface IDimensionProperties {
-    x?: number,
-    y?: number,
-    width: number,
-    height: number,
-    stepIndex: number
-}
 
 export class ReelCell extends Sprite {
     constructor(options: IDimensionProperties) {
         super();
-        
-        this.interactive = true;
-        this.cursor = 'pointer';
 
         this.setRandomTexture();
         this.setConstantDimensions();
@@ -48,13 +39,13 @@ export class ReelCell extends Sprite {
     }
 
     calculateRelativePosition(options: IDimensionProperties): void {
-        const X = (options.width - CELL_WIDTH) / 2,
-            Y = (options.height - this.height) / 2 - options.stepIndex * CELL_HEIGHT_FIX;
+        const X = (options.width - CELL_WIDTH) / 2;
+            // Y = (options.height - this.height) / 2 - options.stepIndex * CELL_HEIGHT_FIX;
 
         options.x = options.x || 0;
         options.y = options.y || 0;
 
-        this.x = options.x + X;
-        this.y = options.y + Y;
+        this.x = Math.round(options.x + X);
+        this.y = Math.round(options.y);
     }
 }

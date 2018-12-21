@@ -1,5 +1,7 @@
-import { Sprite } from 'pixi.js';
+import { Sprite, filters } from 'pixi.js';
 import { ReelCell } from './ReelCell';
+
+import { IDimensionProperties, IReelProperties, IEvent } from '../Interfaces/main.interface';
 
 const BezierEasing = require('bezier-easing');
 const animate = require('../vendor/animate');
@@ -7,42 +9,18 @@ const animate = require('../vendor/animate');
 const REELCELLS_COUNT = 4;
 const REEL_TOP_OFFSET = 30;
 const REEL_LEFT_OFFSET = 20;
-const REELCELL_SPIN_SPEED = 10;
-const REELCELL_SPIN_ACCEL = 1;
-const FINISH_FRAMES_COUNT = 30;
-
-interface IPosition {
-    x: number,
-    y: number
-}
-
-interface ISize {
-    width: number,
-    height: number
-}
-
-interface IReelProperties {
-    x: number,
-    height: number,
-    reelStep: number
-}
-
-interface IDimensionProperties {
-    x?: number,
-    y?: number,
-    width: number,
-    height: number,
-    stepIndex: number
-}
+const BLUR_FILTER_STRENGTH = 0;
 
 export class Reel extends Sprite {
-    protected ReelCells: Array<ReelCell> = [];
-    protected reelCellStep: number = 0;
-    protected reelCellWidth: number = 0;
-    protected spinnedValue: number = 0;
-    protected isSpinning: boolean = false;
-    protected finishSpinBezier: Function = BezierEasing(0,0.94,0.59,2);
-    protected spinBezier: Function = BezierEasing(0,0,1,1);
+    private ReelCells: Array<ReelCell> = [];
+    private reelCellStep: number = 0;
+    private reelCellWidth: number = 0;
+    private spinnedValue: number = 0;
+    private isSpinning: boolean = false;
+    private finishSpinBezier: Function = BezierEasing(0,0.94,0.79,2);
+    private spinBezier: Function = BezierEasing(0,0,1,1);
+    private blurFilter: filters.BlurFilter = new filters.BlurFilter(BLUR_FILTER_STRENGTH);
+    private eventsList: any = {};
 
     constructor(options: IReelProperties) {
         super();
@@ -51,8 +29,26 @@ export class Reel extends Sprite {
         this.setPosition(options.x);
         this.fixPosition();
 
+        this.blurFilter.blurX = 0;
+
         window['startSpin'] = this.spinTick.bind(this);
         window['Reel'] = this;
+    }
+
+    subscribe(type: string, handler: Function) {
+        this.eventsList[type] = this.eventsList[type] || [];
+        this.eventsList[type].push(handler);
+    }
+
+    notify(e: IEvent) {
+        if (!this.eventsList[e.type]) {
+            // throw 'No such event ' + e.type;
+            return null;
+        }
+
+        this.eventsList[e.type].forEach(handler => {
+            handler(e);
+        });
     }
 
     setupReelCells(options: IReelProperties): void {
@@ -84,6 +80,8 @@ export class Reel extends Sprite {
 
     addCell(reelCell: ReelCell): void {
         this.ReelCells.splice(0, 0, reelCell); //Such a way needed for spinning algorithm
+        // if (this.isSpinning) debugger;
+
         this.addChild(reelCell);
     }
 
@@ -95,9 +93,13 @@ export class Reel extends Sprite {
         const freshCell = this.createNewCell({
             width: this.reelCellWidth,
             height: this.reelCellStep,
-            y: -1 * this.reelCellStep,
+            y: -1 * this.reelCellStep + this.spinnedValue,
             stepIndex: -1
         });
+
+        // console.log(freshCell.y);
+
+        this.isSpinning && this.blurCell(freshCell);
 
         this.removeChild(this.ReelCells.pop());
         this.addCell(freshCell);
@@ -124,46 +126,39 @@ export class Reel extends Sprite {
         setTimeout(this.stopSpin.bind(this), spinTime);
     }
 
-    spin(spinSpeed?: number): void {
+    spin(): void {
+        this.blurCells();
+
         animate({
-            tickStep: 1,
-            delay: 5000,
+            tickStep: 2,
+            delay: 3000,
             step: (step, val) => {
                 // console.log(step, val);
                 this.spinTick(step);
             },
             complete: () => {
-                // this.refreshCell();
                 this.finishSpin();
             },
             bezier: this.spinBezier
         });
-
-        // if (!this.isSpinning && this.spinnedValue == 0) {
-        //     this.finishSpin();
-        //     return null;
-        // }
-
-        // spinSpeed = REELCELL_SPIN_SPEED;
-
-        // spinSpeed = spinSpeed || 0;
-        // spinSpeed += REELCELL_SPIN_ACCEL;
-        // spinSpeed > REELCELL_SPIN_SPEED && (spinSpeed = REELCELL_SPIN_SPEED);
-
-        // this.spinTick(spinSpeed);
-        // requestAnimationFrame(this.spin.bind(this, spinSpeed));
     }
 
     finishSpin(): void {
+        this.unblurCells();
+
         animate({
-            from: this.spinnedValue - 10,
+            from: this.spinnedValue,
             to: this.reelCellStep,
-            delay: 600,
+            delay: 300,
             step: (step, val) => {
                 this.spinTick(step);
             },
             complete: () => {
                 this.spinnedValue = 0;
+                this.notify({
+                    type: 'end-spin',
+                    data: null
+                });
                 // this.refreshCell();
             },
             bezier: this.finishSpinBezier
@@ -182,15 +177,30 @@ export class Reel extends Sprite {
         spinSpeed = spinSpeed || 0;
 
         this.ReelCells.forEach( cell => {
-            cell.y += spinSpeed;
+            cell.y = Math.round(cell.y + spinSpeed);
         });
 
         this.spinnedValue += spinSpeed;
 
-        if (this.spinnedValue >= this.reelCellStep) {
-            console.log('spinned');
-            this.spinnedValue = 0;
+        if (this.spinnedValue > this.reelCellStep) {
+            this.spinnedValue = this.spinnedValue - this.reelCellStep;
             this.refreshCell();
         }
+    }
+
+    blurCell(reelCell: ReelCell): void {
+        reelCell.filters = [this.blurFilter];
+    }
+
+    blurCells(): void {
+        this.ReelCells.forEach( cell => {
+            cell.filters = [this.blurFilter];
+        });
+    }
+
+    unblurCells(): void {
+        this.ReelCells.forEach( cell => {
+            cell.filters = [];
+        });
     }
 }
